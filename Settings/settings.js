@@ -1,0 +1,1 @@
+﻿var settings = {"Info": "", "Permission": "everyone", "Cooldown": 10};
