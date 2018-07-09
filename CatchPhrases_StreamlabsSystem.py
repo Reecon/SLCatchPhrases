@@ -80,7 +80,7 @@ def Init():
 #---------------------------
 def Execute(data):
     #   only handle messages from chat
-    if data.IsChatMessage():
+    if data.IsChatMessage() and data.IsFromTwitch() and not data.IsWhisper():
 
         found = False
         regex = ''
