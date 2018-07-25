@@ -20,7 +20,7 @@ Explanation:
 
 `<special permission>` Must be present if `<permission>` is `user_specific`. Comma seperated list of usernames allowed to trigger this regex match.
 
-`<response>` **(must be present)** The response that will be send to chat if the regex matches a chat message (or part of it).
+`<response>` **(must be present)** The response that will be send to chat if the regex matches a chat message (or part of it). Must be surrounded by ". Nested " are allowed.
 
 Available paramters are:
 
@@ -39,4 +39,5 @@ This can be used for moderation as well.
 `/\(\s*\.\s*([yY]|\)\s*\()\s*\.\s*\)/ 0 everyone "/timeout $username 600 rekt by regex for $message"`
 
 More infos on regular expressoins: https://docs.python.org/2/library/re.html
+
 Test your regex's here: https://regexr.com/
