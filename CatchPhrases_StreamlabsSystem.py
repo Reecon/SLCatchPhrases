@@ -21,7 +21,7 @@ ScriptName = "CatchPhrases"
 Website = "reecon820@gmail.com"
 Description = "Allows the reaction to regular expressions whithin a chat message"
 Creator = "Reecon820"
-Version = "1.0.1.0"
+Version = "1.1.0.0"
 
 #---------------------------
 #   Define Global Variables
@@ -84,21 +84,21 @@ def Execute(data):
 
         found = False
         regex = ''
-        response = ''
+        obj = {}
         #   Parse chat line for the any given key word or phrase
         for rx, rp in RegexDict.iteritems():
             if re.search(rx, data.Message):
                 found = True
                 regex = rx
-                response = rp
+                obj = rp
                 break
     
         if found:
             #   Check if the command is not on cooldown and the user has permission to use the command
-            if not Parent.IsOnCooldown(ScriptName, regex) and Parent.HasPermission(data.User, ScriptSettings.Permission, ScriptSettings.Info):
-                Parent.BroadcastWsEvent("EVENT_MINE", "{'show':false}")
+            if not Parent.IsOnCooldown(ScriptName, regex) and Parent.HasPermission(data.User, obj['permission'], obj['users']):
+                response = Parse(obj['response'], data.User, data.Message)
                 Parent.SendStreamMessage(response)    # Send your message to chat
-                Parent.AddCooldown(ScriptName, regex, ScriptSettings.Cooldown)  # Put the command on cooldown
+                Parent.AddCooldown(ScriptName, regex, obj['cooldown'])  # Put the command on cooldown
 
     return
 
@@ -111,7 +111,9 @@ def Tick():
 #---------------------------
 #   [Optional] Parse method (Allows you to create your own custom $parameters) 
 #---------------------------
-def Parse(parseString, userid, username, targetid, targetname, message):
+def Parse(parseString, username, message):
+    parseString = parseString.replace('$username', username)
+    parseString = parseString.replace('$message', message)
     return parseString
 
 #---------------------------
@@ -145,14 +147,51 @@ def LoadConfigFile():
         with codecs.open(RegexPath, encoding="utf-8-sig", mode="r") as f:
             matches = {}
             for line in f:
-                regex = re.search("/.*/", line).group(0).strip('/')
-                response = re.search("\".*\"", line).group(0).strip('"')
-                matches[regex] = response
+                line = line.strip()         # remove leading and trailing spaces 
+                if len(line) > 0:           # ignore empty lines
+                    if line[0] != '#':      # ignore comment lines
+                        tokens = list(enumerate(line.split(" ")))
+                        regex = ''
+                        response = ''
+                        cooldown = -1
+                        permission = ''
+                        users = ''
+                        for i, token in tokens:
+                            try:
+                                if re.search("^/.*/$", token):
+                                    regex = re.search("^/.*/$", token).group(0).strip('/')
+                                elif token[0] == '"' and not response:  
+                                    # if a response is already found this token is part of the response and already handled
+                                    text = ''
+                                    for word in list(tokens[i:]): 
+                                        text = text + " " + word[1]
+                                    response = text[2:-1]
+                                elif re.search("^\d$", token) and not cooldown:
+                                    cooldown = int(token) if int(token) >= 0 else 0
+                                elif token in ['everyone','moderator','subscriber','editor', 'user_specific'] and not permission:
+                                    # if permission is already set, this token is part of the response
+                                    permission = token
+                                elif re.search("^(\w+,*)+$", token) and permission == 'user_specific' and not users: 
+                                    # if the user list is already set, this token is part of the response
+                                    users = token
+                            except Exception as err:
+                                Parent.Log(ScriptName, "Error while parsing line: {0} - {1}".format(line, err))
 
+                        if not regex or not response:
+                            Parent.Log(ScriptName, "Error Parsing line - no regex or response found: {}".format(line))
+                            continue
+
+                        obj = {'response': response}
+                        obj['cooldown'] = cooldown if cooldown >= 0 else ScriptSettings.Cooldown
+                        obj['permission'] = permission if permission else ScriptSettings.Permission
+                        obj['users'] = users if users else ScriptSettings.Info
+
+                        matches[regex] = obj 
+                        
             global RegexDict
             RegexDict = matches
 
     except Exception as err:
-        Parent.Log(ScriptName, "Could not load Regex file {0}".format(err))
+        Parent.Log(ScriptName, "Could not load Regex file: {0}".format(err))
 
     return

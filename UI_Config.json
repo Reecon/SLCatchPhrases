@@ -1,17 +1,17 @@
 ﻿{
     "Cooldown": {
         "group": "Core", 
-        "label": "Cooldown (seconds)", 
+        "label": "Default Cooldown (seconds)", 
         "max": 100, 
         "min": 0, 
         "ticks": 1, 
-        "tooltip": "How long the command should go on cooldown for", 
+        "tooltip": "Default value for how long the command should go on cooldown for", 
         "type": "slider", 
-        "value": 0
+        "value": 10
     }, 
     "Info": {
         "group": "Core", 
-        "label": "Info", 
+        "label": "Default Users", 
         "tooltip": "This field should only be filled when using the user_specific permission.", 
         "type": "textbox", 
         "value": ""
@@ -25,10 +25,10 @@
             "user_specific", 
             "editor"
         ], 
-        "label": "Permission", 
-        "tooltip": "Who is able to use the command", 
+        "label": "Default Permission", 
+        "tooltip": "Default value for who is able to use the command", 
         "type": "dropdown", 
-        "value": "subscriber"
+        "value": "everyone"
     }, 
     "btnStart": {
         "function": "EditConfigFile", 
