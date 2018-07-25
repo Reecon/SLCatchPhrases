@@ -21,7 +21,7 @@ ScriptName = "CatchPhrases"
 Website = "reecon820@gmail.com"
 Description = "Allows the reaction to regular expressions whithin a chat message"
 Creator = "Reecon820"
-Version = "1.1.0.0"
+Version = "1.1.1.0"
 
 #---------------------------
 #   Define Global Variables
@@ -161,19 +161,21 @@ def LoadConfigFile():
                                 if re.search("^/.*/$", token):
                                     regex = re.search("^/.*/$", token).group(0).strip('/')
                                 elif token[0] == '"' and not response:  
-                                    # if a response is already found this token is part of the response and already handled
-                                    text = ''
-                                    for word in list(tokens[i:]): 
-                                        text = text + " " + word[1]
-                                    response = text[2:-1]
-                                elif re.search("^\d$", token) and not cooldown:
+                                    # if a response is already found this token is part of the response and already handled, 
+                                    words = []
+                                    for word in list(tokens[i:]):
+                                        words.append(word[1])
+                                    text = " ".join(words)
+                                    response = text[1:-1]   # remove first and last " rest are nested and part of response
+                                    break   # since the response is the last element of the line, we are done here
+                                elif re.search("^\d$", token) and cooldown < 0:
                                     cooldown = int(token) if int(token) >= 0 else 0
                                 elif token in ['everyone','moderator','subscriber','editor', 'user_specific'] and not permission:
                                     # if permission is already set, this token is part of the response
                                     permission = token
-                                elif re.search("^(\w+,*)+$", token) and permission == 'user_specific' and not users: 
+                                elif re.search("^(\w+,?)+$", token) and permission == 'user_specific' and not users: 
                                     # if the user list is already set, this token is part of the response
-                                    users = token
+                                    users = token.replace(",", " ")
                             except Exception as err:
                                 Parent.Log(ScriptName, "Error while parsing line: {0} - {1}".format(line, err))
 
@@ -190,7 +192,7 @@ def LoadConfigFile():
                         
             global RegexDict
             RegexDict = matches
-
+            
     except Exception as err:
         Parent.Log(ScriptName, "Could not load Regex file: {0}".format(err))
 
