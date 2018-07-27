@@ -168,7 +168,7 @@ def LoadConfigFile():
                                     text = " ".join(words)
                                     response = text[1:-1]   # remove first and last " rest are nested and part of response
                                     break   # since the response is the last element of the line, we are done here
-                                elif re.search("^\d$", token) and cooldown < 0:
+                                elif re.search("^\d+$", token) and cooldown < 0:
                                     cooldown = int(token) if int(token) >= 0 else 0
                                 elif token in ['everyone','moderator','subscriber','editor', 'user_specific'] and not permission:
                                     # if permission is already set, this token is part of the response
