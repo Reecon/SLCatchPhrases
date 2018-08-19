@@ -7,7 +7,7 @@
         "ticks": 1, 
         "tooltip": "Default value for how long the command should go on cooldown for", 
         "type": "slider", 
-        "value": 10
+        "value": 60
     }, 
     "Info": {
         "group": "Core", 

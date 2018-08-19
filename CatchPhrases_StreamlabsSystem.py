@@ -12,8 +12,6 @@ import clr
 clr.AddReference("IronPython.SQLite.dll")
 clr.AddReference("IronPython.Modules.dll")
 
-#   Import your Settings class
-from Settings_Module import MySettings
 #---------------------------
 #   [Required] Script Information
 #---------------------------
@@ -21,20 +19,46 @@ ScriptName = "CatchPhrases"
 Website = "reecon820@gmail.com"
 Description = "Allows the reaction to regular expressions whithin a chat message"
 Creator = "Reecon820"
-Version = "1.1.1.0"
+Version = "1.1.2.0"
+
+#---------------------------
+#   Settings Handling
+#---------------------------
+class CpSettings:
+	def __init__(self, settingsfile=None):
+		try:
+			with codecs.open(settingsfile, encoding="utf-8-sig", mode="r") as f:
+				self.__dict__ = json.load(f, encoding="utf-8")
+		except:
+			self.Cooldown = 10
+			self.Permission = "everyone"
+			self.Info = ""
+
+	def Reload(self, jsondata):
+		self.__dict__ = json.loads(jsondata, encoding="utf-8")
+
+	def Save(self, settingsfile):
+		try:
+			with codecs.open(settingsfile, encoding="utf-8-sig", mode="w+") as f:
+				json.dump(self.__dict__, f, encoding="utf-8")
+			with codecs.open(settingsfile.replace("json", "js"), encoding="utf-8-sig", mode="w+") as f:
+				f.write("var settings = {0};".format(json.dumps(self.__dict__, encoding='utf-8')))
+		except:
+			Parent.Log(ScriptName, "Failed to save settings to file.")
+
 
 #---------------------------
 #   Define Global Variables
 #---------------------------
-global SettingsFile
-SettingsFile = ""
-global ScriptSettings
-ScriptSettings = MySettings()
-global RegexDict
-RegexDict = {}
+global cpSettingsFile
+cpSettingsFile = ""
+global cpScriptSettings
+cpScriptSettings = CpSettings()
+global cpRegexDict
+cpRegexDict = {}
 
-global RegexPath
-RegexPath = os.path.abspath(os.path.join(os.path.dirname(__file__), "regex.conf")).replace("\\", "/")
+global cpRegexPath
+cpRegexPath = os.path.abspath(os.path.join(os.path.dirname(__file__), "regex.conf")).replace("\\", "/")
 
 #---------------------------
 #   [Required] Initialize Data (Only called on load)
@@ -47,33 +71,14 @@ def Init():
         os.makedirs(directory)
 
     #   Load settings
-    global SettingsFile
-    SettingsFile = os.path.join(os.path.dirname(__file__), "Settings\settings.json")
-    global ScriptSettings
-    ScriptSettings = MySettings(SettingsFile)
+    global cpSettingsFile
+    cpSettingsFile = os.path.join(os.path.dirname(__file__), "Settings\settings.json")
+    global cpScriptSettings
+    cpScriptSettings = CpSettings(cpSettingsFile)
 
-    ui = {}
-    UiFilePath = os.path.join(os.path.dirname(__file__), "UI_Config.json")
-    try:
-        with codecs.open(UiFilePath, encoding="utf-8-sig", mode="r") as f:
-            ui = json.load(f, encoding="utf-8")
-    except Exception as err:
-        Parent.Log(ScriptName, "{0}".format(err))
-
-    # update ui with loaded settings
-    ui['Cooldown']['value'] = ScriptSettings.Cooldown
-    ui['Permission']['value'] = ScriptSettings.Permission
-    ui['Info']['value'] = ScriptSettings.Info
-
-    try:
-        with codecs.open(UiFilePath, encoding="utf-8-sig", mode="w+") as f:
-            json.dump(ui, f, encoding="utf-8", indent=4, sort_keys=True)
-    except Exception as err:
-        Parent.Log(ScriptName, "{0}".format(err))
+    updateUi()
 
     LoadConfigFile()
-
-    return
 
 #---------------------------
 #   [Required] Execute Data / Process messages
@@ -100,8 +105,6 @@ def Execute(data):
                 Parent.SendStreamMessage(response)    # Send your message to chat
                 Parent.AddCooldown(ScriptName, regex, obj['cooldown'])  # Put the command on cooldown
 
-    return
-
 #---------------------------
 #   [Required] Tick method (Gets called during every iteration even when there is no incoming data)
 #---------------------------
@@ -121,8 +124,9 @@ def Parse(parseString, username, message):
 #---------------------------
 def ReloadSettings(jsonData):
     # Execute json reloading here
-    ScriptSettings.Reload(jsonData)
-    ScriptSettings.Save(SettingsFile)
+    cpScriptSettings.Reload(jsonData)
+    cpScriptSettings.Save(cpSettingsFile)
+    updateUi()
     LoadConfigFile()
     return
 
@@ -139,12 +143,12 @@ def ScriptToggled(state):
     return
 
 def EditConfigFile():
-    os.startfile(RegexPath)
+    os.startfile(cpRegexPath)
     return
 
 def LoadConfigFile():
     try:
-        with codecs.open(RegexPath, encoding="utf-8-sig", mode="r") as f:
+        with codecs.open(cpRegexPath, encoding="utf-8-sig", mode="r") as f:
             matches = {}
             for line in f:
                 line = line.strip()         # remove leading and trailing spaces 
@@ -184,9 +188,9 @@ def LoadConfigFile():
                             continue
 
                         obj = {'response': response}
-                        obj['cooldown'] = cooldown if cooldown >= 0 else ScriptSettings.Cooldown
-                        obj['permission'] = permission if permission else ScriptSettings.Permission
-                        obj['users'] = users if users else ScriptSettings.Info
+                        obj['cooldown'] = cooldown if cooldown >= 0 else cpScriptSettings.Cooldown
+                        obj['permission'] = permission if permission else cpScriptSettings.Permission
+                        obj['users'] = users if users else cpScriptSettings.Info
 
                         matches[regex] = obj 
                         
@@ -196,4 +200,23 @@ def LoadConfigFile():
     except Exception as err:
         Parent.Log(ScriptName, "Could not load Regex file: {0}".format(err))
 
-    return
+
+def updateUi():
+    ui = {}
+    UiFilePath = os.path.join(os.path.dirname(__file__), "UI_Config.json")
+    try:
+        with codecs.open(UiFilePath, encoding="utf-8-sig", mode="r") as f:
+            ui = json.load(f, encoding="utf-8")
+    except Exception as err:
+        Parent.Log(ScriptName, "{0}".format(err))
+
+    # update ui with loaded settings
+    ui['Cooldown']['value'] = cpScriptSettings.Cooldown
+    ui['Permission']['value'] = cpScriptSettings.Permission
+    ui['Info']['value'] = cpScriptSettings.Info
+
+    try:
+        with codecs.open(UiFilePath, encoding="utf-8-sig", mode="w+") as f:
+            json.dump(ui, f, encoding="utf-8", indent=4, sort_keys=True)
+    except Exception as err:
+        Parent.Log(ScriptName, "{0}".format(err))
