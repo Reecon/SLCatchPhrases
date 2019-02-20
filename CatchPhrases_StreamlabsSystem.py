@@ -19,7 +19,7 @@ ScriptName = "CatchPhrases"
 Website = "reecon820@gmail.com"
 Description = "Allows the reaction to regular expressions whithin a chat message"
 Creator = "Reecon820"
-Version = "1.1.2.0"
+Version = "1.1.3.0"
 
 #---------------------------
 #   Settings Handling
@@ -54,8 +54,8 @@ global cpSettingsFile
 cpSettingsFile = ""
 global cpScriptSettings
 cpScriptSettings = CpSettings()
-global cpRegexDict
-cpRegexDict = {}
+global RegexArray
+RegexArray = []
 
 global cpRegexPath
 cpRegexPath = os.path.abspath(os.path.join(os.path.dirname(__file__), "regex.conf")).replace("\\", "/")
@@ -91,11 +91,11 @@ def Execute(data):
         regex = ''
         obj = {}
         #   Parse chat line for the any given key word or phrase
-        for rx, rp in RegexDict.iteritems():
-            if re.search(rx, data.Message):
+        for item in RegexArray:
+            if re.search(item[0], data.Message):
                 found = True
-                regex = rx
-                obj = rp
+                regex = item[0]
+                obj = item[1]
                 break
     
         if found:
@@ -149,7 +149,7 @@ def EditConfigFile():
 def LoadConfigFile():
     try:
         with codecs.open(cpRegexPath, encoding="utf-8-sig", mode="r") as f:
-            matches = {}
+            matches = []
             for line in f:
                 line = line.strip()         # remove leading and trailing spaces 
                 if len(line) > 0:           # ignore empty lines
@@ -192,10 +192,10 @@ def LoadConfigFile():
                         obj['permission'] = permission if permission else cpScriptSettings.Permission
                         obj['users'] = users if users else cpScriptSettings.Info
 
-                        matches[regex] = obj 
+                        matches.append((regex, obj))
                         
-            global RegexDict
-            RegexDict = matches
+            global RegexArray
+            RegexArray = matches
             
     except Exception as err:
         Parent.Log(ScriptName, "Could not load Regex file: {0}".format(err))
